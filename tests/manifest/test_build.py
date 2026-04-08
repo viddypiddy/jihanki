@@ -15,6 +15,7 @@ def test_minimal_build():
     assert b.workdir == "/var/runner"
     assert b.regcred_directory == ""
     assert b.build_material_source is None
+    assert b.shared_cache == []
 
 
 def test_all_fields():
@@ -70,3 +71,23 @@ def test_missing_container():
 def test_wrong_type_command():
     with pytest.raises(ValidationError):
         BuildSchema(command=123, container="img")
+
+
+def test_shared_cache():
+    s = BuildSchema(
+        command="./build.sh",
+        container="builder:1.0",
+        shared_cache=["/host/cache:/build/cache", "/host/temp:/build/temp"],
+    )
+    b = Build(s, Path("/"))
+    assert b.shared_cache == ["/host/cache:/build/cache", "/host/temp:/build/temp"]
+
+
+def test_shared_cache_empty_by_default():
+    s = BuildSchema(command="./run.sh", container="img")
+    assert s.shared_cache == []
+
+
+def test_shared_cache_wrong_type():
+    with pytest.raises(ValidationError):
+        BuildSchema(command="./run.sh", container="img", shared_cache="not-a-list")

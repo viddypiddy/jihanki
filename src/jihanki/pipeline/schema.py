@@ -23,6 +23,7 @@ class BuildSchema(BaseModel):
     build_material: BuildMaterialSchema = Field(
         default_factory=BuildMaterialSchema, alias="build-material"
     )
+    shared_cache: list[str] = []
 
 
 class EnvVarSchema(BaseModel):

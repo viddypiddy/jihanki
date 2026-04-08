@@ -11,6 +11,7 @@ class Build:
         self.container = schema.container
         self.workdir = schema.workdir
         self.regcred_directory = schema.regcred_directory
+        self.shared_cache = schema.shared_cache
 
         match schema.build_material.source:
             case "filesystem":

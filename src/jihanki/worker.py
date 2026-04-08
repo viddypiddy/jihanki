@@ -68,6 +68,7 @@ def init_volumes(job_id: str, variables, pipeline: Pipeline):
 
     """
     volumes.extend(pipeline.input.create_variable_files(input_dir, variables))
+    volumes.extend(pipeline.build.shared_cache)
 
     log.info("Created files")
 
