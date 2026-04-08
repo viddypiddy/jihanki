@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-from unittest.mock import MagicMock
 
 from jihanki.pipeline import Pipeline
 from jihanki.pipeline.schema import PipelineSchema
@@ -10,22 +9,29 @@ from jihanki.worker import init_volumes
 def test_shared_cache_in_volumes(tmp_path):
     os.environ["SCRATCH_DIR"] = str(tmp_path)
 
-    schema = PipelineSchema.model_validate({
-        "build": {
-            "command": "./build.sh",
-            "container": "test-image",
-            "workdir": "/build",
-            "shared_cache": [
-                "/host/cache:/build/cache",
-                "/host/temp:/build/temp",
+    schema = PipelineSchema.model_validate(
+        {
+            "build": {
+                "command": "./build.sh",
+                "container": "test-image",
+                "workdir": "/build",
+                "shared_cache": [
+                    "/host/cache:/build/cache",
+                    "/host/temp:/build/temp",
+                ],
+            },
+            "output": [
+                {
+                    "patterns": ["*.bin"],
+                    "destination": {
+                        "provider": "filesystem",
+                        "options": {"location": "/tmp/out"},
+                    },
+                    "notify": {"destination": "cli"},
+                }
             ],
-        },
-        "output": [{
-            "patterns": ["*.bin"],
-            "destination": {"provider": "filesystem", "options": {"location": "/tmp/out"}},
-            "notify": {"destination": "cli"},
-        }],
-    })
+        }
+    )
     pipeline = Pipeline("test", schema, Path("/fake/pipelines.yml"))
 
     with init_volumes("test-job", {}, pipeline) as (volumes, output_dir):
@@ -36,18 +42,25 @@ def test_shared_cache_in_volumes(tmp_path):
 def test_no_shared_cache_in_volumes(tmp_path):
     os.environ["SCRATCH_DIR"] = str(tmp_path)
 
-    schema = PipelineSchema.model_validate({
-        "build": {
-            "command": "./build.sh",
-            "container": "test-image",
-            "workdir": "/build",
-        },
-        "output": [{
-            "patterns": ["*.bin"],
-            "destination": {"provider": "filesystem", "options": {"location": "/tmp/out"}},
-            "notify": {"destination": "cli"},
-        }],
-    })
+    schema = PipelineSchema.model_validate(
+        {
+            "build": {
+                "command": "./build.sh",
+                "container": "test-image",
+                "workdir": "/build",
+            },
+            "output": [
+                {
+                    "patterns": ["*.bin"],
+                    "destination": {
+                        "provider": "filesystem",
+                        "options": {"location": "/tmp/out"},
+                    },
+                    "notify": {"destination": "cli"},
+                }
+            ],
+        }
+    )
     pipeline = Pipeline("test", schema, Path("/fake/pipelines.yml"))
 
     with init_volumes("test-job", {}, pipeline) as (volumes, output_dir):

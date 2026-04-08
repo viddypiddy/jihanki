@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "jihanki"
 description = "Build system designed for building custom releases of software from a common base"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.10"
 
 classifiers = [
     "Framework :: Sanic",

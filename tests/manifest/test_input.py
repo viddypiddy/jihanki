@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
 from pydantic import ValidationError
-from jihanki.pipeline.input import Input, FileFromVar
+from jihanki.pipeline.input import Input
 from jihanki.pipeline.schema import InputSchema
 
 

@@ -24,6 +24,7 @@ class BuildSchema(BaseModel):
         default_factory=BuildMaterialSchema, alias="build-material"
     )
     shared_cache: list[str] = []
+    persist_build_logs_to: Optional[str] = None
 
 
 class EnvVarSchema(BaseModel):

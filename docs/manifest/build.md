@@ -9,6 +9,7 @@ build:
   privileged_command: ./setup.sh    # optional
   workdir: /var/runner               # optional, default: /var/runner
   regcred_directory: /regcred/config.json  # optional
+  persist_build_logs_to: /var/log/builds  # optional
   build-material:                    # optional, default: none
     source: filesystem
     options:
@@ -29,6 +30,7 @@ output:
 | `privileged_command` | string | No | `""` | Command to run as root before the main command |
 | `workdir` | string | No | `/var/runner` | Working directory inside the container where build material is mounted |
 | `regcred_directory` | string | No | `""` | Path to Docker registry credentials file. If set, Bob logs in before pulling the image |
+| `persist_build_logs_to` | string | No | | Directory to write build logs to. Log files are named `<datetime>-<job_id>.log`. The directory is created if it doesn't exist |
 
 ## build-material
 

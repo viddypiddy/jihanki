@@ -5,7 +5,6 @@ from rq import get_current_job
 
 import os
 import shutil
-import time
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -86,6 +85,7 @@ def docker_exec_run(container, pwd: str, command: str, user: str, environment=No
     if result is not None:
         raise RuntimeError(f"Invalid result: {result}")
 
+    collected_lines = []
     line_builder = ""
     for line in data:
         line_builder += line.decode()
@@ -93,7 +93,11 @@ def docker_exec_run(container, pwd: str, command: str, user: str, environment=No
             contents = line_builder.split("\n")
             for content in contents:
                 log.debug(f"docker STDOUT/ERR: {content}")
+                collected_lines.append(content)
             line_builder = contents[-1]
+    if line_builder:
+        collected_lines.append(line_builder)
+    return "\n".join(collected_lines)
 
 
 def run_job(variables, pipeline):
@@ -101,7 +105,7 @@ def run_job(variables, pipeline):
     log.info(f"Job is running, job id {job.id}")
 
     with init_volumes(job.id, variables, pipeline) as (volumes, output_dir):
-        log.info(f"Launching with volumes:")
+        log.info("Launching with volumes:")
         for volume in volumes:
             log.info(f" -> {volume}")
         # Set up docker connection
@@ -122,7 +126,7 @@ def run_job(variables, pipeline):
             try:
                 client.images.get(pipeline.build.container)
                 log.info("Image already exists locally, not pulling")
-            except docker.errors.ImageNotFound as e:
+            except docker.errors.ImageNotFound:
                 log.info("Image doesn't exist locally, pulling")
                 should_pull = True
 
@@ -150,9 +154,11 @@ def run_job(variables, pipeline):
         )
         container.start()
 
+        build_logs = ""
+
         if pipeline.build.privileged_command != "":
             log.info("Starting privileged container")
-            docker_exec_run(
+            build_logs += docker_exec_run(
                 container,
                 workdir,
                 pipeline.build.privileged_command,
@@ -165,7 +171,7 @@ def run_job(variables, pipeline):
             f"Starting normal container, running as {RUN_UID}, running {pipeline.build.command} from {workdir}"
         )
         # Run unprivileged
-        docker_exec_run(
+        build_logs += docker_exec_run(
             container, workdir, pipeline.build.command, f"{RUN_UID}", environment
         )
         log.info("Done running normal container")
@@ -173,7 +179,10 @@ def run_job(variables, pipeline):
         container.stop()
         container.remove()
 
-        log.info(f"Done running container")
+        log.info("Done running container")
+
+        # Persist build logs
+        pipeline.build.persist_build_logs(job.id, build_logs)
 
         # Deliver the results
         pipeline.deliver(job.id, output_dir)

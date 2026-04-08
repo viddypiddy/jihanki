@@ -1,11 +1,10 @@
 import shutil
 from pathlib import Path
-
+import os
 import logging
 
 log = logging.getLogger(__name__)
 
-import os
 
 
 class DestinationHandler:

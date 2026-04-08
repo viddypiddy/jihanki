@@ -1,11 +1,10 @@
-import logging
-
-log = logging.getLogger(__name__)
-
 import requests
 import os
+import logging
 
 from rq import Queue
+
+log = logging.getLogger(__name__)
 
 
 class NotificationHandler:
