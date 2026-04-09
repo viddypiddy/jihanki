@@ -180,7 +180,9 @@ def test_webhook_notification_supports_headers(monkeypatch):
             queued["headers"] = headers
 
     monkeypatch.setattr("jihanki.pipeline.output.notification.Queue", DummyQueue)
-    monkeypatch.setattr("jihanki.pipeline.output.notification.redis_connection", object(), raising=False)
+    monkeypatch.setattr(
+        "jihanki.pipeline.output.notification.redis_connection", object(), raising=False
+    )
     monkeypatch.setenv("TEST_WEBHOOK_TOKEN", "secret-token")
 
     handler = WebhookNotificationHandler(

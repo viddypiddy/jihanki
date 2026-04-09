@@ -35,6 +35,10 @@ token = os.environ["JIHANKI_TOKEN"]
 
 @app.on_request
 async def token_checker(request):
+    if request.path.startswith("/healthz"):
+        log.debug(f"Allowing healthcheck request")
+        return
+
     if "Authorization" not in request.headers:
         return json({"error": "No token"}, status=401)
 
@@ -50,7 +54,12 @@ async def token_checker(request):
 
 @app.get("/")
 async def hello_world(request):
-    return text("Can he build it?")
+    return text("Beep boop")
+
+
+@app.get("/healthz")
+async def healthcheck(request):
+    return text("OK")
 
 
 @app.post("/api/v1/job")
