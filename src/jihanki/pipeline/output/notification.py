@@ -14,8 +14,8 @@ class NotificationHandler:
         raise RuntimeError("Not implemented")
 
 
-def send_webhook_async(url, payload):
-    requests.post(url, json=payload)
+def send_webhook_async(url, payload, headers=None):
+    requests.post(url, json=payload, headers=headers)
 
 
 class DiscordNotificationHandler(NotificationHandler):
@@ -46,6 +46,9 @@ class WebhookNotificationHandler(NotificationHandler):
             raise RuntimeError(
                 "Unable to setup webhook notifications: Neither url_from_env or url is specified in the notification options"
             )
+        self.headers = dict(options.get("headers", {}))
+        for header_name, env_name in options.get("headers_from_env", {}).items():
+            self.headers[header_name] = os.environ[env_name]
 
     def notify(self, job_id, files, destination_metadata):
         from jihanki.redis import redis_connection
@@ -55,6 +58,7 @@ class WebhookNotificationHandler(NotificationHandler):
             send_webhook_async,
             self.url,
             {"job_id": job_id, "files": [str(path) for path in files]},
+            self.headers or None,
         )
 
 

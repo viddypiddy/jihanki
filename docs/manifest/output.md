@@ -89,6 +89,8 @@ Posts job results as JSON to an HTTP endpoint.
 |--------|------|-------------|
 | `url` | string | Webhook URL (provide one of `url` or `url_from_env`) |
 | `url_from_env` | string | Environment variable name containing the webhook URL |
+| `headers` | map | Optional static HTTP headers to send with the webhook |
+| `headers_from_env` | map | Optional map of header name to environment variable for secret header values |
 
 ### `cli` destination
 
