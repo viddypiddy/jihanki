@@ -16,6 +16,7 @@ class BuildSchema(BaseModel):
 
     command: str
     container: str
+    user: str = ""
     privileged_command: str = ""
     force_pull: bool = True
     workdir: str = "/var/runner"

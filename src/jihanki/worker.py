@@ -136,12 +136,13 @@ def run_job(variables, pipeline):
             log.info("Image has been pulled")
 
         workdir = pipeline.build.workdir
+        container_user = pipeline.build.user or str(RUN_UID)
 
         log.debug("Creating supporting container")
         environment = pipeline.get_env_variables(variables)
 
         log.debug(
-            f"Creating container with volumes {volumes}, environment {environment}, UID {RUN_UID}"
+            f"Creating container with volumes {volumes}, environment {environment}, user {container_user}"
         )
 
         container = client.containers.create(
@@ -149,7 +150,7 @@ def run_job(variables, pipeline):
             ["sleep", "1000000"],
             volumes=volumes,
             environment=environment,
-            user=RUN_UID,
+            user=container_user,
             detach=True,
         )
         container.start()
@@ -168,11 +169,11 @@ def run_job(variables, pipeline):
             log.info("Done running privileged container")
 
         log.info(
-            f"Starting normal container, running as {RUN_UID}, running {pipeline.build.command} from {workdir}"
+            f"Starting normal container, running as {container_user}, running {pipeline.build.command} from {workdir}"
         )
         # Run unprivileged
-        build_logs += docker_exec_run(
-            container, workdir, pipeline.build.command, f"{RUN_UID}", environment
+        docker_exec_run(
+            container, workdir, pipeline.build.command, container_user, environment
         )
         log.info("Done running normal container")
 

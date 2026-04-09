@@ -1,4 +1,5 @@
 import pytest
+from pathlib import Path
 from pydantic import ValidationError
 from jihanki.pipeline.output import Output
 from jihanki.pipeline.output.packager import ZipPackager, CopyPackager
@@ -137,6 +138,28 @@ def test_webhook_notification_url_from_env(monkeypatch):
     )
     assert isinstance(o.notification_handler, WebhookNotificationHandler)
     assert o.notification_handler.url == "https://example.com/hook"
+
+
+def test_webhook_notification_serializes_paths(monkeypatch):
+    queued = {}
+
+    class DummyQueue:
+        def __init__(self, connection=None):
+            pass
+
+        def enqueue(self, func, url, payload):
+            queued["func"] = func
+            queued["url"] = url
+            queued["payload"] = payload
+
+    monkeypatch.setattr("jihanki.pipeline.output.notification.Queue", DummyQueue)
+    monkeypatch.setattr("jihanki.pipeline.output.notification.redis_connection", object(), raising=False)
+
+    handler = WebhookNotificationHandler({"url": "https://example.com/hook"})
+    handler.notify("job-123", [Path("job-123/out.bin")], {})
+
+    assert queued["url"] == "https://example.com/hook"
+    assert queued["payload"] == {"job_id": "job-123", "files": ["job-123/out.bin"]}
 
 
 def test_cli_notification():

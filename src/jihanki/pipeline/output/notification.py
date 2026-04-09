@@ -51,7 +51,11 @@ class WebhookNotificationHandler(NotificationHandler):
         from jihanki.redis import redis_connection
 
         q = Queue(connection=redis_connection)
-        q.enqueue(send_webhook_async, self.url, {"job_id": job_id, "files": files})
+        q.enqueue(
+            send_webhook_async,
+            self.url,
+            {"job_id": job_id, "files": [str(path) for path in files]},
+        )
 
 
 class CliNotificationHandler(NotificationHandler):

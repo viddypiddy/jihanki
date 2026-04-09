@@ -14,6 +14,7 @@ class Build:
         self.privileged_command = schema.privileged_command
         self.force_pull = schema.force_pull
         self.container = schema.container
+        self.user = schema.user
         self.workdir = schema.workdir
         self.regcred_directory = schema.regcred_directory
         self.shared_cache = schema.shared_cache
@@ -47,6 +48,8 @@ class Build:
             "Build command": self.command,
             "Working directory": self.workdir,
         }
+        if self.user:
+            d["Container user"] = self.user
         if self.privileged_command:
             d["Privileged setup command"] = self.privileged_command
         if self.regcred_directory:
