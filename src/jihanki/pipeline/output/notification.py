@@ -15,7 +15,11 @@ class NotificationHandler:
 
 
 def send_webhook_async(url, payload, headers=None):
-    requests.post(url, json=payload, headers=headers)
+    response = requests.post(url, json=payload, headers=headers)
+    if not response.ok:
+        log.warning(
+            "Webhook to %s returned %s: %s", url, response.status_code, response.text
+        )
 
 
 class DiscordNotificationHandler(NotificationHandler):
