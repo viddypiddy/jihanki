@@ -147,10 +147,11 @@ def test_webhook_notification_serializes_paths(monkeypatch):
         def __init__(self, connection=None):
             pass
 
-        def enqueue(self, func, url, payload):
+        def enqueue(self, func, url, payload, headers=None):
             queued["func"] = func
             queued["url"] = url
             queued["payload"] = payload
+            queued["headers"] = headers
 
     monkeypatch.setattr("jihanki.pipeline.output.notification.Queue", DummyQueue)
     monkeypatch.setattr(
@@ -162,6 +163,41 @@ def test_webhook_notification_serializes_paths(monkeypatch):
 
     assert queued["url"] == "https://example.com/hook"
     assert queued["payload"] == {"job_id": "job-123", "files": ["job-123/out.bin"]}
+    assert queued["headers"] is None
+
+
+def test_webhook_notification_supports_headers(monkeypatch):
+    queued = {}
+
+    class DummyQueue:
+        def __init__(self, connection=None):
+            pass
+
+        def enqueue(self, func, url, payload, headers=None):
+            queued["func"] = func
+            queued["url"] = url
+            queued["payload"] = payload
+            queued["headers"] = headers
+
+    monkeypatch.setattr("jihanki.pipeline.output.notification.Queue", DummyQueue)
+    monkeypatch.setattr("jihanki.pipeline.output.notification.redis_connection", object(), raising=False)
+    monkeypatch.setenv("TEST_WEBHOOK_TOKEN", "secret-token")
+
+    handler = WebhookNotificationHandler(
+        {
+            "url": "https://example.com/hook",
+            "headers": {"Content-Type": "application/json"},
+            "headers_from_env": {"X-Webhook-Token": "TEST_WEBHOOK_TOKEN"},
+        }
+    )
+    handler.notify("job-123", [Path("job-123/out.bin")], {})
+
+    assert queued["url"] == "https://example.com/hook"
+    assert queued["payload"] == {"job_id": "job-123", "files": ["job-123/out.bin"]}
+    assert queued["headers"] == {
+        "Content-Type": "application/json",
+        "X-Webhook-Token": "secret-token",
+    }
 
 
 def test_cli_notification():
