@@ -11,7 +11,6 @@ from pathlib import Path
 import glob
 import hashlib
 import tempfile
-import os
 
 import logging
 
@@ -111,7 +110,5 @@ class Output:
                 for p in result_files:
                     sha256 = hashlib.sha256(p.read_bytes()).hexdigest()
                     file_checksums[str(p.relative_to(tmpdir))] = sha256
-                self.notification_handler.notify(
-                    job_id, file_checksums, metadata
-                )
+                self.notification_handler.notify(job_id, file_checksums, metadata)
                 log.info("Successfully notified of completion")

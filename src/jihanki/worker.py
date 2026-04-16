@@ -117,7 +117,7 @@ def run_job(variables, pipeline):
             log.info(
                 f"Logging in to registry defined at {pipeline.build.regcred_directory}"
             )
-            status = client.login(
+            client.login(
                 username="foo", dockercfg_path=pipeline.build.regcred_directory
             )
             log.info("Login succeeded?")

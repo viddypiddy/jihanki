@@ -36,7 +36,7 @@ class RedisDestinationHandler(DestinationHandler):
             )
 
         with files[0].open("rb") as file:
-            keyname = "%s%s" % (self.prefix, job_id)
+            keyname = "%s%s" % (self.prefix, files[0].stem)
             redis_connection.set(keyname, file.read())
             redis_connection.expire(keyname, self.expiry)
             log.info("Delivered payload to redis")

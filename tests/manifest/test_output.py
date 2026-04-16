@@ -1,5 +1,4 @@
 import pytest
-from pathlib import Path
 from pydantic import ValidationError
 from jihanki.pipeline.output import Output
 from jihanki.pipeline.output.packager import ZipPackager, CopyPackager
@@ -162,7 +161,10 @@ def test_webhook_notification_serializes_paths(monkeypatch):
     handler.notify("job-123", {"job-123/out.bin": "abc123"}, {})
 
     assert queued["url"] == "https://example.com/hook"
-    assert queued["payload"] == {"job_id": "job-123", "files": {"job-123/out.bin": "abc123"}}
+    assert queued["payload"] == {
+        "job_id": "job-123",
+        "files": {"job-123/out.bin": "abc123"},
+    }
     assert queued["headers"] is None
 
 
@@ -195,7 +197,10 @@ def test_webhook_notification_supports_headers(monkeypatch):
     handler.notify("job-123", {"job-123/out.bin": "abc123"}, {})
 
     assert queued["url"] == "https://example.com/hook"
-    assert queued["payload"] == {"job_id": "job-123", "files": {"job-123/out.bin": "abc123"}}
+    assert queued["payload"] == {
+        "job_id": "job-123",
+        "files": {"job-123/out.bin": "abc123"},
+    }
     assert queued["headers"] == {
         "Content-Type": "application/json",
         "X-Webhook-Token": "secret-token",

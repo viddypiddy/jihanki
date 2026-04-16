@@ -36,7 +36,7 @@ token = os.environ["JIHANKI_TOKEN"]
 @app.on_request
 async def token_checker(request):
     if request.path.startswith("/healthz"):
-        log.debug(f"Allowing healthcheck request")
+        log.debug("Allowing healthcheck request")
         return
 
     if "Authorization" not in request.headers:
