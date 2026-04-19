@@ -17,6 +17,10 @@ import logging
 log = logging.getLogger(__name__)
 
 
+class NoArtifactsError(RuntimeError):
+    pass
+
+
 def find_files(patterns, path):
     log.info(f"Looking for files in {path}")
     files = set()
@@ -89,10 +93,14 @@ class Output:
             d["Notification"] = "None"
         return d
 
-    def deliver(self, job_id: str, out_dir: Path):
+    def deliver(self, job_id: str, out_dir: Path, started_at=None):
         # Use glob to create list of all files that should be included in the end result
         log.debug("Finding files to deliver")
         files = find_files(self.patterns, out_dir)
+        if len(files) == 0:
+            raise NoArtifactsError(
+                f"No artifacts matched output patterns: {', '.join(self.patterns)}"
+            )
 
         log.info("Creating artifact zip file")
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -110,5 +118,7 @@ class Output:
                 for p in result_files:
                     sha256 = hashlib.sha256(p.read_bytes()).hexdigest()
                     file_checksums[str(p.relative_to(tmpdir))] = sha256
-                self.notification_handler.notify(job_id, file_checksums, metadata)
+                self.notification_handler.notify(
+                    job_id, file_checksums, metadata, started_at
+                )
                 log.info("Successfully notified of completion")

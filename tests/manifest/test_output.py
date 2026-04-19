@@ -1,6 +1,7 @@
 import pytest
+from datetime import datetime, timezone
 from pydantic import ValidationError
-from jihanki.pipeline.output import Output
+from jihanki.pipeline.output import NoArtifactsError, Output
 from jihanki.pipeline.output.packager import ZipPackager, CopyPackager
 from jihanki.pipeline.output.destination import (
     FilesystemDestinationHandler,
@@ -48,6 +49,23 @@ def test_packager_defaults_to_zip():
     )
     o = Output(s)
     assert isinstance(o.packager, ZipPackager)
+
+
+def test_deliver_fails_when_no_artifacts(tmp_path):
+    o = _make_output(
+        {
+            "patterns": ["missing/**"],
+            "destination": {
+                "provider": "filesystem",
+                "options": {"location": str(tmp_path / "delivered")},
+            },
+        }
+    )
+
+    with pytest.raises(NoArtifactsError, match="No artifacts matched"):
+        o.deliver("job-123", tmp_path / "out")
+
+    assert not (tmp_path / "delivered").exists()
 
 
 def test_copy_packager():
@@ -146,26 +164,38 @@ def test_webhook_notification_serializes_paths(monkeypatch):
         def __init__(self, connection=None):
             pass
 
-        def enqueue(self, func, url, payload, headers=None):
+        def enqueue(self, func, url, payload, headers=None, **kwargs):
             queued["func"] = func
             queued["url"] = url
             queued["payload"] = payload
             queued["headers"] = headers
+            queued["kwargs"] = kwargs
 
     monkeypatch.setattr("jihanki.pipeline.output.notification.Queue", DummyQueue)
     monkeypatch.setattr(
         "jihanki.pipeline.output.notification.redis_connection", object(), raising=False
     )
+    monkeypatch.setattr(
+        "jihanki.pipeline.output.notification.utc_now",
+        lambda: datetime(2026, 4, 20, 12, 0, 5, tzinfo=timezone.utc),
+    )
 
     handler = WebhookNotificationHandler({"url": "https://example.com/hook"})
-    handler.notify("job-123", {"job-123/out.bin": "abc123"}, {})
+    handler.notify(
+        "job-123",
+        {"job-123/out.bin": "abc123"},
+        {},
+        datetime(2026, 4, 20, 12, 0, 0, tzinfo=timezone.utc),
+    )
 
     assert queued["url"] == "https://example.com/hook"
-    assert queued["payload"] == {
-        "job_id": "job-123",
-        "files": {"job-123/out.bin": "abc123"},
-    }
+    assert queued["payload"]["job_id"] == "job-123"
+    assert queued["payload"]["files"] == {"job-123/out.bin": "abc123"}
+    assert queued["payload"]["started_at"] == "2026-04-20T12:00:00Z"
+    assert queued["payload"]["completed_at"] == "2026-04-20T12:00:05Z"
+    assert queued["payload"]["duration_seconds"] == 5.0
     assert queued["headers"] is None
+    assert queued["kwargs"] == {"at_front": True}
 
 
 def test_webhook_notification_supports_headers(monkeypatch):
@@ -175,15 +205,20 @@ def test_webhook_notification_supports_headers(monkeypatch):
         def __init__(self, connection=None):
             pass
 
-        def enqueue(self, func, url, payload, headers=None):
+        def enqueue(self, func, url, payload, headers=None, **kwargs):
             queued["func"] = func
             queued["url"] = url
             queued["payload"] = payload
             queued["headers"] = headers
+            queued["kwargs"] = kwargs
 
     monkeypatch.setattr("jihanki.pipeline.output.notification.Queue", DummyQueue)
     monkeypatch.setattr(
         "jihanki.pipeline.output.notification.redis_connection", object(), raising=False
+    )
+    monkeypatch.setattr(
+        "jihanki.pipeline.output.notification.utc_now",
+        lambda: datetime(2026, 4, 20, 12, 0, 5, tzinfo=timezone.utc),
     )
     monkeypatch.setenv("TEST_WEBHOOK_TOKEN", "secret-token")
 
@@ -194,17 +229,24 @@ def test_webhook_notification_supports_headers(monkeypatch):
             "headers_from_env": {"X-Webhook-Token": "TEST_WEBHOOK_TOKEN"},
         }
     )
-    handler.notify("job-123", {"job-123/out.bin": "abc123"}, {})
+    handler.notify(
+        "job-123",
+        {"job-123/out.bin": "abc123"},
+        {},
+        datetime(2026, 4, 20, 12, 0, 0, tzinfo=timezone.utc),
+    )
 
     assert queued["url"] == "https://example.com/hook"
-    assert queued["payload"] == {
-        "job_id": "job-123",
-        "files": {"job-123/out.bin": "abc123"},
-    }
+    assert queued["payload"]["job_id"] == "job-123"
+    assert queued["payload"]["files"] == {"job-123/out.bin": "abc123"}
+    assert queued["payload"]["started_at"] == "2026-04-20T12:00:00Z"
+    assert queued["payload"]["completed_at"] == "2026-04-20T12:00:05Z"
+    assert queued["payload"]["duration_seconds"] == 5.0
     assert queued["headers"] == {
         "Content-Type": "application/json",
         "X-Webhook-Token": "secret-token",
     }
+    assert queued["kwargs"] == {"at_front": True}
 
 
 def test_cli_notification():

@@ -57,12 +57,10 @@ class FilesystemDestinationHandler(DestinationHandler):
         shutil.copytree(foundfiles_dir, self.location, dirs_exist_ok=True)
         # Walk foundfiles_dir and chmod it in dst dir
         for root, dirs, files in os.walk(foundfiles_dir, topdown=False):
-            r_p = Path(root)
+            rel_root = Path(root).relative_to(foundfiles_dir)
 
-            # chmod dirs
-            for d in [r_p / d for d in dirs]:
-                os.chmod(self.location / d, 0o664)
+            for d in dirs:
+                os.chmod(self.location / rel_root / d, 0o775)
 
-            # chmod files
-            for f in [r_p / f for f in files]:
-                os.chmod(self.location / f, 0o664)
+            for f in files:
+                os.chmod(self.location / rel_root / f, 0o664)

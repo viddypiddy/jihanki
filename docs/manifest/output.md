@@ -25,6 +25,8 @@ output:
 ### Fields
 
 Output files in jihanki **MUST** be placed in `/out`.
+If the configured `patterns` match no files, Jihanki treats the job as failed
+and skips artifact delivery and success notification.
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
@@ -84,6 +86,12 @@ Posts a message to a Discord webhook.
 ### `webhook` destination
 
 Posts job results as JSON to an HTTP endpoint.
+
+The payload contains `job_id`, `files`, `started_at`, `completed_at`, and
+`duration_seconds`. `started_at` is captured when the worker starts running the
+job, while `completed_at` is captured after Jihanki finishes delivering that
+job's artifacts. Receivers should use these fields instead of webhook arrival
+time when calculating durations.
 
 | Option | Type | Description |
 |--------|------|-------------|

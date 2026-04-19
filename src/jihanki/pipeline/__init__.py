@@ -36,10 +36,10 @@ class Pipeline:
     def validate(self, request):
         return self.input.validate(request)
 
-    def deliver(self, job_id, output_dir):
+    def deliver(self, job_id, output_dir, started_at=None):
         log.info(f"Delivering to {len(self.output_configs)} outputs")
         for output in self.output_configs:
-            output.deliver(job_id, output_dir)
+            output.deliver(job_id, output_dir, started_at)
 
     def get_env_variables(self, variables):
         return self.input.get_env_variables(variables)
